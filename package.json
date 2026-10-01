@@ -1,0 +1,35 @@
+{
+  "name": "agente-ia",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/Juan-Francisco-Martin-Saez/Agente-IA#readme",
+  "bugs": {
+    "url": "https://github.com/Juan-Francisco-Martin-Saez/Agente-IA/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Juan-Francisco-Martin-Saez/Agente-IA.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:front-admin dev:front-worker dev:auth-admin dev:auth-worker dev:auth proxy",
+    "dev:front-admin": "cd client/admin/front-admin && npm run dev",
+    "dev:front-worker": "cd client/worker/front-worker && npm run dev",
+    "dev:auth-admin": "cd client/admin/auth-admin && npm run dev",
+    "dev:auth-worker": "cd client/worker/auth-worker && npm run dev",
+    "dev:auth": "cd client/auth && npm run dev",
+    "install": "npm-run-all --parallel install:front-admin install:front-worker install:auth-admin install:auth-worker install:auth",
+    "install:front-admin": "cd client/admin/front-admin && npm install",
+    "install:front-worker": "cd client/worker/front-worker && npm install",
+    "install:auth-admin": "cd client/admin/auth-admin && npm install",
+    "install:auth-worker": "cd client/worker/auth-worker && npm install",
+    "install:auth": "cd client/auth && npm install",
+    "proxy": "node ./proxy.js"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
+  }
+}

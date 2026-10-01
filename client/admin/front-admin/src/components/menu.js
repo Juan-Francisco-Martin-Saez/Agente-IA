@@ -1,9 +1,49 @@
-
 class AppMenu extends HTMLElement {
   constructor() {
     super();
     this.shadow = this.attachShadow({ mode: "open" })
-    this.data = []
+    this.data = [
+      {
+        "nombre": "Inicio",
+        "href": "#"
+      },
+      {
+        "nombre": "Usuarios",
+        "href": "#"
+      },
+      {
+        "nombre": "Productos",
+        "href": "#"
+      },
+      {
+        "nombre": "Servicios",
+        "href": "#"
+      },
+      {
+        "nombre": "Proyectos",
+        "href": "#"
+      },
+      {
+        "nombre": "Noticias",
+        "href": "#"
+      },
+      {
+        "nombre": "Galería",
+        "href": "#"
+      },
+      {
+        "nombre": "Sobre nosotros",
+        "href": "#"
+      },
+      {
+        "nombre": "Contacto",
+        "href": "#"
+      },
+      {
+        "nombre": "Configuración",
+        "href": "#"
+      }
+    ]
     this.shadow.innerHTML =
     /*html*/`
       <style>
@@ -209,13 +249,8 @@ class AppMenu extends HTMLElement {
       }
     });
   }
-  async connectedCallback() {
-    await this.loadData();
+  connectedCallback() {
     this.renderLinks();
-  }
-  async loadData() {
-    const respuesta = await fetch(this.getAttribute("src"));
-    this.data = await respuesta.json();
   }
   renderLinks() {
     this.lista.innerHTML = "";
