@@ -1,12 +1,11 @@
+
 class ChatInput extends HTMLElement {
 
   constructor() {
     super();
-    this.shadow = this.attachShadow({ mode: "open" })
+    this.shadow = this.attachShadow({ mode: "open" });
     this.shadow.innerHTML = /* html */ `
-
       <style>
-
         :host {
           position: absolute;
           left: 0;
@@ -84,7 +83,6 @@ class ChatInput extends HTMLElement {
         .file-attach-button {
           width: 2.25rem;
           height: 2.25rem;
-
           display: flex;
           align-items: center;
           justify-content: center;
@@ -228,7 +226,6 @@ class ChatInput extends HTMLElement {
           color: hsl(0, 0%, 10%);
         }
 
-
         :host([data-theme="light"])
         .message-send-button {
           background: hsl(0, 0%, 10%);
@@ -241,7 +238,6 @@ class ChatInput extends HTMLElement {
         }
 
         @media (min-width: 64.0625rem) {
-
           :host {
             left: 0;
             right: 0;
@@ -255,19 +251,15 @@ class ChatInput extends HTMLElement {
             bottom: 7rem;
             transform: none;
           }
-
         }
 
         @media (min-width: 120rem) {
-
           .chat-input-wrapper {
             max-width: 62rem;
           }
-
         }
 
         @media (max-width: 64rem) {
-
           .chat-input-section {
             padding: 0 1rem 1rem;
           }
@@ -283,19 +275,15 @@ class ChatInput extends HTMLElement {
           :host([has-messages]) {
             top: auto; bottom: 7rem; transform: none;
           }
-
         }
 
         @media (max-width: 48rem) {
-
           .chat-input-section {
             padding: 0 0.875rem 0.875rem;
           }
-
         }
 
         @media (max-width: 30rem) {
-
           .chat-input-section {
             padding: 0 0.75rem 0.75rem;
           }
@@ -304,20 +292,15 @@ class ChatInput extends HTMLElement {
             gap: 0.5rem;
             padding: 0.5rem;
           }
-
         }
 
-
         @media (max-width: 22rem) {
-
           .chat-input-section {
             padding: 0 0.625rem 0.625rem;
           }
-
         }
 
         @media (max-height: 40rem) {
-
           .chat-input-section {
             padding-bottom: 0.875rem;
           }
@@ -325,12 +308,10 @@ class ChatInput extends HTMLElement {
           :host([has-messages]) {
             bottom: 6rem;
           }
-
         }
 
         @media (max-width: 30rem)
         and (max-height: 40rem) {
-
           .chat-input-section {
             padding-bottom: 0.75rem;
           }
@@ -338,32 +319,28 @@ class ChatInput extends HTMLElement {
           :host([has-messages]) {
             bottom: 5rem;
           }
-
         }
-
       </style>
-
 
       <section class="chat-input-section">
         <div class="chat-input-wrapper">
           <slot name="file-preview"></slot>
+
           <div class="chat-input-container">
             <div class="file-attach-container">
               <input type="file" id="file-attach" class="file-attach-input">
               <label for="file-attach" class="file-attach-button" aria-label="Adjuntar archivo">
-                <span class="file-attach-icon">
-                  +
-                </span>
+                <span class="file-attach-icon">+</span>
               </label>
             </div>
+
             <div class="message-input-container">
               <textarea class="message-input" placeholder="Escribe tu consulta..." rows="1"></textarea>
             </div>
+
             <div class="message-send-container">
               <button type="button" class="message-send-button" aria-label="Enviar consulta">
-                <span class="message-send-icon">
-                  ↑
-                </span>
+                <span class="message-send-icon">↑</span>
               </button>
             </div>
           </div>
@@ -374,6 +351,7 @@ class ChatInput extends HTMLElement {
     this.messageInput = this.shadowRoot.querySelector(".message-input");
     this.sendButton = this.shadowRoot.querySelector(".message-send-button");
     this.fileInput = this.shadowRoot.querySelector("#file-attach");
+
     this.handleInput = this.handleInput.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handleSend = this.handleSend.bind(this);
@@ -382,21 +360,20 @@ class ChatInput extends HTMLElement {
 
     this.sidebarObserver = null;
 
+    // CONTROL DE ENVÍOS (ORIGINAL)
+    this.sending = false;
   }
 
   connectedCallback() {
-
     this.messageInput.addEventListener("input", this.handleInput);
     this.messageInput.addEventListener("keydown", this.handleKeyDown);
     this.sendButton.addEventListener("click", this.handleSend);
     this.fileInput.addEventListener("change", this.handleFileSelection);
     this.syncWithSidebar();
     this.observeSidebar();
-
   }
 
   disconnectedCallback() {
-
     this.messageInput.removeEventListener("input", this.handleInput);
     this.messageInput.removeEventListener("keydown", this.handleKeyDown);
     this.sendButton.removeEventListener("click", this.handleSend);
@@ -406,51 +383,125 @@ class ChatInput extends HTMLElement {
       this.sidebarObserver.disconnect();
       this.sidebarObserver = null;
     }
-
   }
 
   handleInput() {
-
     this.autoResize();
-
   }
 
   handleKeyDown(event) {
-
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       this.handleSend();
-
     }
-
   }
 
-  handleSend() {
+  // ENVÍO REAL CON FORM DATA Y FETCH
+  async handleSend() {
+    if (this.sending) return;
 
     const message = this.messageInput.value.trim();
     const file = this.fileInput.files[0] || null;
 
+    if (!message && !file) return;
 
-    if (!message && !file) {
+    // FORM DATA
+    const formData = new FormData();
+    formData.append("message", message);
 
-      return;
+    if (file) {
+      formData.append("file", file);
     }
 
-    this.dispatchEvent(new CustomEvent("send-message-request", {
-      bubbles: true,
-      composed: true,
-      detail: { message, file }
-    }));
+    // DATOS EN CONSOLA
+    console.group("DATOS DEL FORMULARIO");
 
+    for (const [key, value] of formData.entries()) {
+      console.log(`${key}:`, value);
+    }
+
+    console.groupEnd();
+
+    this.sending = true;
+    this.sendButton.disabled = true;
+
+    try {
+      // FETCH REAL AL SERVIDOR
+      const response = await fetch("", {
+        method: "POST",
+        body: formData
+      });
+
+      // COMPROBAR RESPUESTA HTTP
+      console.log("Estado HTTP:", response.status);
+      console.log("Estado del servidor:", response.statusText);
+
+      // LEER RESPUESTA
+      const responseText = await response.text();
+      let data;
+
+      try {
+        data = responseText ? JSON.parse(responseText) : null;
+      } catch {
+        data = responseText;
+      }
+
+      console.log("Respuesta del servidor:", data);
+
+      // CONTROL DE ERRORES HTTP
+      if (!response.ok) {
+        throw new Error(
+          `Error HTTP ${response.status}: ${typeof data === "string"
+            ? data
+            : data?.message || response.statusText
+          }`
+        );
+      }
+
+      // MENSAJE DE ÉXITO
+      document.dispatchEvent(new CustomEvent("message", {
+        detail: {
+          text: "Formulario enviado correctamente",
+          type: "success"
+        }
+      }));
+
+      // EVENTO DEL CHAT
+      this.dispatchEvent(new CustomEvent("send-message-request", {
+        bubbles: true,
+        composed: true,
+        detail: { message, file, data }
+      }));
+
+      // LIMPIAR CAMPOS
+      this.clear();
+      this.clearFile();
+
+      console.log("Envío completado correctamente");
+
+    } catch (error) {
+      // ERROR DETALLADO
+      console.error("Error durante el envío:", error);
+
+      document.dispatchEvent(new CustomEvent("message", {
+        detail: {
+          text: `Error al enviar el formulario: ${error.message}`,
+          type: "error"
+        }
+      }));
+
+    } finally {
+      // RESTABLECER BOTÓN
+      this.sending = false;
+      this.sendButton.disabled = false;
+    }
   }
 
   handleFileSelection() {
     const file = this.fileInput.files[0];
 
     if (!file) {
-
       return;
-
     }
 
     this.dispatchEvent(new CustomEvent("file-selected", {
@@ -458,84 +509,62 @@ class ChatInput extends HTMLElement {
       composed: true,
       detail: { file }
     }));
-
   }
 
   autoResize() {
     this.messageInput.style.height = "auto";
-
     const maxHeight = parseFloat(getComputedStyle(this.messageInput).maxHeight);
     const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
     const height = Math.min(this.messageInput.scrollHeight, maxHeight);
     this.messageInput.style.height = `${height / rootFontSize}rem`;
-
   }
 
   clear() {
     this.messageInput.value = "";
     this.messageInput.style.height = "auto";
-
   }
-
 
   clearFile() {
     this.fileInput.value = "";
   }
 
   syncWithSidebar() {
-
     const sidebar = document.querySelector("chat-sidebar");
 
     if (!sidebar) {
-
       return;
-
     }
 
     const theme = sidebar.getAttribute("data-theme");
 
     if (theme === "light") {
       this.setAttribute("data-theme", "light");
-
     } else {
       this.removeAttribute("data-theme");
-
     }
-
   }
 
   observeSidebar() {
-
     const sidebar = document.querySelector("chat-sidebar");
 
     if (!sidebar) {
-
       return;
-
     }
 
     if (this.sidebarObserver) {
-
       this.sidebarObserver.disconnect();
-
     }
 
     this.sidebarObserver = new MutationObserver(this.handleSidebarChange);
-
     this.sidebarObserver.observe(sidebar, {
       attributes: true,
       attributeFilter: ["data-theme"]
     });
-
   }
 
   handleSidebarChange() {
-
     this.syncWithSidebar();
-
   }
-
 }
-
 
 customElements.define("chat-input", ChatInput);
