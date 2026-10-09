@@ -322,31 +322,32 @@ class ChatInput extends HTMLElement {
         <div class="chat-input-wrapper">
           <slot name="file-preview"></slot>
 
-          <div class="chat-input-container">
+          <form class="chat-input-container">
             <div class="file-attach-container">
-              <input type="file" id="file-attach" class="file-attach-input">
+              <input type="file" id="file-attach" name="file" class="file-attach-input">
               <label for="file-attach" class="file-attach-button" aria-label="Adjuntar archivo">
                 <span class="file-attach-icon">+</span>
               </label>
             </div>
 
             <div class="message-input-container">
-              <textarea class="message-input" placeholder="Escribe tu consulta..." rows="1"></textarea>
+              <textarea name="message" class="message-input" placeholder="Escribe tu consulta..." rows="1"></textarea>
             </div>
 
             <div class="message-send-container">
-              <button type="button" class="message-send-button" aria-label="Enviar consulta">
+              <button type="submit" class="message-send-button" aria-label="Enviar consulta">
                 <span class="message-send-icon">↑</span>
               </button>
             </div>
-          </div>
+          </form>
         </div>
       </section>
     `;
 
-    this.messageInput = this.shadowRoot.querySelector(".message-input");
-    this.sendButton = this.shadowRoot.querySelector(".message-send-button");
-    this.fileInput = this.shadowRoot.querySelector("#file-attach");
+    this.form = this.shadow.querySelector("form");
+    this.messageInput = this.shadow.querySelector(".message-input");
+    this.sendButton = this.shadow.querySelector(".message-send-button");
+    this.fileInput = this.shadow.querySelector("#file-attach");
 
     this.handleInput = this.handleInput.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -361,7 +362,7 @@ class ChatInput extends HTMLElement {
   connectedCallback() {
     this.messageInput.addEventListener("input", this.handleInput);
     this.messageInput.addEventListener("keydown", this.handleKeyDown);
-    this.sendButton.addEventListener("click", this.handleSend);
+    this.form.addEventListener("submit", this.handleSend);
     this.fileInput.addEventListener("change", this.handleFileSelection);
     this.syncWithSidebar();
     this.observeSidebar();
@@ -370,7 +371,7 @@ class ChatInput extends HTMLElement {
   disconnectedCallback() {
     this.messageInput.removeEventListener("input", this.handleInput);
     this.messageInput.removeEventListener("keydown", this.handleKeyDown);
-    this.sendButton.removeEventListener("click", this.handleSend);
+    this.form.removeEventListener("submit", this.handleSend);
     this.fileInput.removeEventListener("change", this.handleFileSelection);
 
     if (this.sidebarObserver) {
@@ -386,56 +387,73 @@ class ChatInput extends HTMLElement {
   handleKeyDown(event) {
     if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
       event.preventDefault();
-      this.handleSend();
+      this.form.requestSubmit();
     }
   }
 
-  // FORM DATA + SIMULACIÓN EN CONSOLA + FETCH PREPARADO
-  async handleSend() {
+  async handleSend(event) {
+    event.preventDefault();
     if (this.sending) return;
 
-    const formData = new FormData();
-    formData.append("message", this.messageInput.value);
+    const form = this.form;
+    const formData = new FormData(form);
+    const message = this.messageInput.value.trim();
+    const file = this.fileInput.files[0] || null;
 
-    const file = this.fileInput.files[0];
-    if (file) formData.append("file", file);
+    if (!message && !file) return;
 
-    if (!this.messageInput.value.trim() && !file) return;
+    formData.set("message", message);
+    if (!file) formData.delete("file");
+
+    const formDataJson = Object.fromEntries(formData.entries());
+
+    console.log("FORM DATA:", [...formData.entries()]);
+    console.log("JSON:", formDataJson);
 
     this.sending = true;
     this.sendButton.disabled = true;
 
     try {
-      // COMPROBACIÓN TEMPORAL EN CONSOLA
-      console.group("DATOS CAPTURADOS CON FORM DATA");
+      const response = await fetch('http://localhost:8080/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formDataJson)
+      });
 
-      for (const [key, value] of formData.entries()) {
-        console.log(key, value);
-      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-      console.groupEnd();
+      const json = await response.json();
 
-      // FETCH REAL: SE ACTIVA AL CONFIGURAR EL ENDPOINT
-      const endpoint = this.getAttribute("endpoint");
-
-      if (endpoint) {
-        const response = await fetch(endpoint, {
-          method: "POST",
-          body: formData
-        });
-
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        this.clear();
-        this.clearFile();
-      }
+      document.dispatchEvent(new CustomEvent('respuestadellamado', {
+        detail: {
+          text: 'Formulario enviado correctamente',
+          type: 'success',
+          data: json
+        }
+      }));
 
     } catch (error) {
-      console.error("Error al enviar:", error);
+      console.log(error);
+
     } finally {
       this.sending = false;
       this.sendButton.disabled = false;
     }
+
+    // CONEXIÓN CON LA SIMULACIÓN DE BÚSQUEDA
+    this.dispatchEvent(new CustomEvent("send-message-request", {
+      bubbles: true,
+      composed: true,
+      detail: {
+        message,
+        file
+      }
+    }));
+
+    this.clear();
+    this.clearFile();
   }
 
   handleFileSelection() {
