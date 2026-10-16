@@ -2,35 +2,33 @@ const express = require('express');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const app = express();
 
-const options = {
-  target: 'http://127.0.0.1:8080',
-  cookieDomainRewrite: 'dev-app.reijohan.com',
-  changeOrigin: true,
-  logLevel: 'debug',
-  onProxyReq: function (proxyReq, req, res) {
-    if (!req.headers['accept-language']) {
-      proxyReq.setHeader('Accept-Language', 'es-ES,es;q=0.9,en;q=0.8');
-    } else {
-      proxyReq.setHeader('Accept-Language', req.headers['accept-language']);
+function createProxy(target) {
+  return createProxyMiddleware({
+    target,
+    cookieDomainRewrite: 'dev-prueba.com',
+    changeOrigin: true,
+    pathRewrite: (_path, req) => req.originalUrl,
+    logger: console,
+    on: {
+      proxyReq(proxyReq, req) {
+        proxyReq.setHeader(
+          'Accept-Language',
+          req.headers['accept-language'] || 'es-ES,es;q=0.9,en;q=0.8'
+        );
+      }
     }
-  }
-};
+  });
+}
 
-app.use('/api', createProxyMiddleware(options));
+app.use('/api', createProxy('http://127.0.0.1:8080'));
+app.use('/admin/login', createProxy('http://localhost:5170'));
+app.use('/admin', createProxy('http://localhost:5171'));
+app.use('/login', createProxy('http://localhost:5176'));
+app.use('/cuenta', createProxy('http://localhost:5178'));
+app.use('/', createProxy('http://localhost:5177'));
 
-options.target = 'http://localhost:5170';
-app.use('/admin/login', createProxyMiddleware(options));
+if (require.main === module) {
+  app.listen(80, '127.0.0.1');
+}
 
-options.target = 'http://localhost:5171';
-app.use('/admin', createProxyMiddleware(options));
-
-options.target = 'http://localhost:5178';
-app.use('/cuenta', createProxyMiddleware(options));
-
-options.target = 'http://localhost:5176';
-app.use('/login', createProxyMiddleware(options));
-
-options.target = 'http://localhost:5177';
-app.use('/', createProxyMiddleware(options));
-
-app.listen(80, '127.0.0.1');
+module.exports = app;
