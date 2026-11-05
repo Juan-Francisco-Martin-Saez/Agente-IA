@@ -12,6 +12,7 @@
     "dev": "node --env-file=.env --watch index.js"
   },
   "dependencies": {
+    "cors": "^2.8.6",
     "express": "^5.3.0"
   }
 }

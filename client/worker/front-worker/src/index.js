@@ -24,6 +24,7 @@ const filePreview = document.querySelector("chat-file-preview");
 const welcome = document.querySelector("chat-welcome");
 const status = document.querySelector("chat-status");
 const messages = document.querySelector("chat-messages");
+const conversation = document.querySelector("chat-conversation");
 
 let selectedFile = null;
 let hasMessages = false;

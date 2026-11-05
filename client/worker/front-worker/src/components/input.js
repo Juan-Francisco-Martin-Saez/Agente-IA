@@ -395,65 +395,34 @@ class ChatInput extends HTMLElement {
     event.preventDefault();
     if (this.sending) return;
 
-    const form = this.form;
-    const formData = new FormData(form);
     const message = this.messageInput.value.trim();
     const file = this.fileInput.files[0] || null;
-
     if (!message && !file) return;
 
-    formData.set("message", message);
-    if (!file) formData.delete("file");
-
-    const formDataJson = Object.fromEntries(formData.entries());
-
-    console.log("FORM DATA:", [...formData.entries()]);
-    console.log("JSON:", formDataJson);
+    // La API actual recibe texto JSON; los adjuntos siguen disponibles
+    // en la interfaz, pero no se envían hasta implementar su endpoint.
+    if (file) {
+      console.warn("El backend actual no admite adjuntos. Retira el archivo para enviar la consulta.");
+      return;
+    }
 
     this.sending = true;
     this.sendButton.disabled = true;
 
-    try {
-      const response = await fetch('http://localhost:8080/admin/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formDataJson)
-      });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      const json = await response.json();
-
-      document.dispatchEvent(new CustomEvent('respuestadellamado', {
-        detail: {
-          text: 'Formulario enviado correctamente',
-          type: 'success',
-          data: json
-        }
-      }));
-
-    } catch (error) {
-      console.log(error);
-
-    } finally {
-      this.sending = false;
-      this.sendButton.disabled = false;
-    }
-
-    // CONEXIÓN CON LA SIMULACIÓN DE BÚSQUEDA
+    // Un solo evento para clic y Enter. La conversación gestiona el fetch.
     this.dispatchEvent(new CustomEvent("send-message-request", {
       bubbles: true,
       composed: true,
-      detail: {
-        message,
-        file
-      }
+      detail: { message, file: null }
     }));
 
     this.clear();
     this.clearFile();
+  }
+
+  finishSend() {
+    this.sending = false;
+    this.sendButton.disabled = false;
   }
 
   handleFileSelection() {
